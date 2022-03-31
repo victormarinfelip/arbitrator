@@ -4,7 +4,7 @@ from itertools import combinations
 from scipy import optimize
 
 
-class Exchange(object):
+class Converter(object):
 
     def __init__(self, name: str, conversion_formula: Optional[Callable] = None, fee: float = 0.,
                  gas_cost: int = 0):
@@ -56,7 +56,7 @@ class Pool(object):
                  assets: List[str],
                  amounts: Optional[List[float]] = None,
                  rate: Optional[float] = None,
-                 exchange: Optional[Exchange] = None
+                 exchange: Optional[Converter] = None
                  ):
 
         if len(assets) < 2:
@@ -66,11 +66,11 @@ class Pool(object):
         if exchange is None and (len(assets) != 2 or rate is None):
             raise InvalidPoolException()
         if exchange is None:
-            exchange = Exchange("GENERIC",
-                                conversion_formula=lambda i, j, x, am, **kwargs: rate * x if i == 0 else (1 / rate) * x)
+            exchange = Converter("GENERIC",
+                                 conversion_formula=lambda i, j, x, am, **kwargs: rate * x if i == 0 else (1 / rate) * x)
 
         self.name = name
-        self.exchange: Exchange = exchange
+        self.exchange: Converter = exchange
         self.assets = assets
 
         self._initial_amounts = amounts
