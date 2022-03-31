@@ -50,17 +50,3 @@ class ImpossibleConversionException(Exception):
 
     def __str__(self):
         return "Invalid conversion: {}".format(str(self.data))
-
-
-class WrongExTypeError(Exception):
-
-    def __init__(self, ex_type):
-        """
-        Raised when an exchange type doesn't match its data
-        """
-
-        super().__init__()
-        self.ex_type = ex_type
-
-    def __str__(self):
-        return "Invalid conversion: {}".format(str(self.ex_type))
