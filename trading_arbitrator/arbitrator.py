@@ -39,7 +39,7 @@ class Arbitrator(object):
     def _create_pools_from_str_pairs(self, pairs: List[List[str]], rates: List[float]) -> List[Pool]:
         pools: List[Pool] = []
         for pair, rate in zip(pairs, rates):
-            pool = Pool(assets=[pair[0], pair[1]], rate=rate)
+            pool = Pool(name="GENERIC", assets=[pair[0], pair[1]], rate=rate)
             pools.append(pool)
         return pools
 
