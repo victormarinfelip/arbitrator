@@ -1,29 +1,14 @@
-from typing import Dict, Optional, Any, List, Tuple, Callable, TypedDict, Union
-from enum import Enum
-from trading_arbitrator.errors import InvalidLoopError, ImpossibleConversionException, WrongExTypeError, LPDepletedError, InvalidPoolException
-from copy import deepcopy
+from typing import Optional, List, Tuple, Callable
+from trading_arbitrator.errors import InvalidLoopError, ImpossibleConversionException, InvalidPoolException
 from itertools import combinations
 from scipy import optimize
 
-# We need...
-# Exchanges, assets, pairs and loops
 
+class Exchange(object):
 
-class ExchangeTypes(str, Enum):
-    CLASSIC = "CLASSIC"
-    DEX = "DEX"
-
-
-class DexRateFormulaType(TypedDict):
-    asset_amounts: List[float]
-    params: Optional[Dict]
-
-
-class Exchange():
-
-    def __init__(self, name: str, type_: ExchangeTypes, conversion_formula: Optional[Callable] = None, fee: float = 0., gas_cost: int = 0):
+    def __init__(self, name: str, conversion_formula: Optional[Callable] = None, fee: float = 0.,
+                 gas_cost: int = 0):
         self.name = name
-        self.ex_type = type_
         self.conversion_formula = conversion_formula
         self._fee = fee
         self.gas_cost: int = gas_cost
@@ -31,7 +16,7 @@ class Exchange():
 
     @property
     def fee(self) -> float:
-        return self._fee / 100. # Fee is in %
+        return self._fee / 100.  # Fee is in %
 
     def apply_conversion(self, *args) -> float:
         return self.conversion_formula(*args)
@@ -75,12 +60,13 @@ class Pool(object):
 
         if len(assets) < 2:
             raise InvalidPoolException()
-        if len(assets) > 2 and len(amounts) != len(assets):
+        if 2 < len(assets) != len(amounts):
             raise InvalidPoolException()
         if exchange is None and (len(assets) != 2 or rate is None):
             raise InvalidPoolException()
         if exchange is None:
-            exchange = Exchange("GENERIC", type_=ExchangeTypes.CLASSIC, conversion_formula=lambda i, j, x, am, **kwargs: rate*x if i == 0 else (1/rate)*x)
+            exchange = Exchange("GENERIC",
+                                conversion_formula=lambda i, j, x, am, **kwargs: rate * x if i == 0 else (1 / rate) * x)
 
         self.exchange: Exchange = exchange
         self.assets = assets
@@ -88,7 +74,7 @@ class Pool(object):
         self._initial_amounts = amounts
         self.amounts = self._initial_amounts.copy()
 
-    def convert(self, asset:str, amount: float, target:str) -> float:
+    def convert(self, asset: str, amount: float, target: str) -> float:
         if asset == target:
             raise ImpossibleConversionException()
         start_i = self.assets.index(asset)
@@ -109,7 +95,7 @@ class Pool(object):
         return pairs_obj
 
     def __repr__(self):
-        return "-".join([str(p) for p in self.assets])+" {}".format(str(self.exchange))
+        return "-".join([str(p) for p in self.assets]) + " {}".format(str(self.exchange))
 
 
 class Loop(object):
@@ -183,12 +169,11 @@ class Loop(object):
 
 
 class LoopPool(object):
-
     _loops: List[Loop]
 
     def __init__(self, loops: Optional[List[Loop]]):
         self._loops = loops
 
     def sort_loops(self, with_fees: bool = True) -> List[Loop]:
-        self._loops.sort(key = lambda l: l.convert(1, with_fees), reverse= True)
+        self._loops.sort(key=lambda l: l.convert(1, with_fees), reverse=True)
         return self._loops
