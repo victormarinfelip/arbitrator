@@ -27,12 +27,12 @@ class Exchange(object):
 
 class Pair(object):
 
-    def __init__(self, asset0: str, asset1: str, index_0: int, index_1: int, convertion: Callable):
+    def __init__(self, asset0: str, asset1: str, index_0: int, index_1: int, convert_function: Callable):
         self.asset0 = asset0
         self.asset1 = asset1
         self.index_0 = index_0
         self.index_1 = index_1
-        self.convertion = convertion
+        self.convert_function = convert_function
         self.parent_pool = None
 
     def convert(self, asset: str, amount: float, with_fees: bool = True) -> Tuple[str, float]:
@@ -42,7 +42,7 @@ class Pair(object):
             target = self.asset0
         else:
             raise ImpossibleConversionException()
-        target_amount = self.convertion(asset, amount, target)
+        target_amount = self.convert_function(asset, amount, target, with_fees)
         return target, target_amount
 
     def __repr__(self):
@@ -52,6 +52,7 @@ class Pair(object):
 class Pool(object):
 
     def __init__(self,
+                 name: str,
                  assets: List[str],
                  amounts: Optional[List[float]] = None,
                  rate: Optional[float] = None,
@@ -68,22 +69,28 @@ class Pool(object):
             exchange = Exchange("GENERIC",
                                 conversion_formula=lambda i, j, x, am, **kwargs: rate * x if i == 0 else (1 / rate) * x)
 
+        self.name = name
         self.exchange: Exchange = exchange
         self.assets = assets
 
         self._initial_amounts = amounts
-        self.amounts = self._initial_amounts.copy()
+        self.amounts = amounts
+        if amounts is not None:
+            self.amounts = self._initial_amounts.copy()
 
-    def convert(self, asset: str, amount: float, target: str) -> float:
+    def convert(self, asset: str, amount: float, target: str, with_fees: bool) -> float:
         if asset == target:
             raise ImpossibleConversionException()
         start_i = self.assets.index(asset)
         end_i = self.assets.index(target)
-        return self.exchange.apply_conversion(start_i, end_i, amount, self.amounts)
+        final_amount = self.exchange.apply_conversion(start_i, end_i, amount, self.amounts)
+        if with_fees:
+            final_amount *= (1 - self.exchange.fee)
+        return final_amount
 
     def reset(self):
-        self.amounts = self._initial_amounts.copy()
-        pass
+        if self._initial_amounts is not None:
+            self.amounts = self._initial_amounts.copy()
 
     def get_pairs(self) -> List[Pair]:
         pairs = list(combinations(self.assets, 2))
