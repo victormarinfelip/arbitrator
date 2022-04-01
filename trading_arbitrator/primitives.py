@@ -61,7 +61,8 @@ class Pair(object):
         return target, target_amount
 
     def __repr__(self):
-        return "{}/{}".format(self.asset0, self.asset1)
+        return "{}/{}{}".format(self.asset0, self.asset1, " ex: {}".format(self.parent_pool.name)
+        if self.parent_pool.name != "GENERIC" else "")
 
 
 class Pool(object):
@@ -186,14 +187,15 @@ class Loop(object):
         """
         return len(self.pairs)
 
-    def convert(self, amount: float, with_fees: bool = True) -> float:
+    def convert(self, amount: float, with_fees: bool = True, reset: bool = True) -> float:
         # Run the full loop
         asset = self.initial_asset
         for pair in self.pairs:
             asset, amount = pair.convert(asset, amount, with_fees)
         # Reset pool state:
-        for pair in self.pairs:
-            pair.parent_pool.reset()
+        if reset:
+            for pair in self.pairs:
+                pair.parent_pool.reset()
         return amount
 
     def get_max_absolute_profit(self) -> Tuple[float, float]:
