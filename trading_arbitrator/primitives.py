@@ -56,21 +56,21 @@ class Pool(object):
                  assets: List[str],
                  amounts: Optional[List[float]] = None,
                  rate: Optional[float] = None,
-                 exchange: Optional[Converter] = None
+                 converter: Optional[Converter] = None
                  ):
 
         if len(assets) < 2:
             raise InvalidPoolException()
         if 2 < len(assets) != len(amounts):
             raise InvalidPoolException()
-        if exchange is None and (len(assets) != 2 or rate is None):
+        if converter is None and (len(assets) != 2 or rate is None):
             raise InvalidPoolException()
-        if exchange is None:
-            exchange = Converter("GENERIC",
-                                 conversion_formula=lambda i, j, x, am, **kwargs: rate * x if i == 0 else (1 / rate) * x)
+        if converter is None:
+            converter = Converter("GENERIC",
+                                  conversion_formula=lambda i, j, x, am, **kwargs: rate * x if i == 0 else (1 / rate) * x)
 
         self.name = name
-        self.exchange: Converter = exchange
+        self.exchange: Converter = converter
         self.assets = assets
 
         self._initial_amounts = amounts
