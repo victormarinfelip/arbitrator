@@ -34,9 +34,9 @@ class LPDepletedError(Exception):
         """
         super().__init__()
 
-
     def __str__(self):
         return "LP tokens were fully depleted!"
+
 
 class ImpossibleConversionException(Exception):
 
