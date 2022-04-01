@@ -1,6 +1,11 @@
 # Arbitrator
 #### *An arbitrage calculator adapted to the modern age of cryto automated market maketrs.*
 
+Requirements:
+
+`Python>=3.8,
+scipy==1.8.0`
+
 Arbitrator is a 100% free library useful to recognize and simulate arbitrage opportunities
 in both normal Forex-like exange types and AMM exchanges living in the blockchain. It is intended for research but it can be easily adapted into a live trading system. Check this simple example:
 
