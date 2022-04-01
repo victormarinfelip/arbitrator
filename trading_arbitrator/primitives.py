@@ -8,6 +8,21 @@ class Converter(object):
 
     def __init__(self, name: str, conversion_formula: Optional[Callable] = None, fee: float = 0.,
                  gas_cost: int = 0):
+        """
+        Represents the algorithm used to swap asset amounts. Must be passed to a Pool.
+
+        :param name: A unique name.
+        :param conversion_formula: A function that will compute the new state of the pool and will return
+            the amount of target asset resulted from the swap. Any function with the following arguments:
+            i: index of initial coin
+            j: index of target coin
+            am: amount of initial coin to be swapped for target coin
+            state: list of pool sizes for all coins. This will have to be updated to reflect the new amounts
+                of coins i and j after the swap.
+            returns: A float representing the amount of target coin obtained after the swap.
+        :param fee: Fee of the pool in percentual points (10 = 10%)
+        :param gas_cost: Cost of a swap in gas units.
+        """
         self.name = name
         self.conversion_formula = conversion_formula
         self._fee = fee
@@ -58,6 +73,18 @@ class Pool(object):
                  rate: Optional[float] = None,
                  converter: Optional[Converter] = None
                  ):
+        """
+        A pool representing any relation between assets. The simplest one is 2 assets
+        with infinite pool sizes and exchangable by a rate, like a forex trade. However this
+        is generalized to a general pool with many types of assets related by a custom function
+        (such as a CFMM).
+
+        :param name: Unique name of the pool.
+        :param assets: List of assets present in the pool, like ["USDT", "USDC", "DAI"]
+        :param amounts: Amounts of each asset present in the pool, like [500, 400, 600]
+        :param rate: Exchange rate between 2 assets. Use only to recreate a simple Forex exchange bewteen 2 assets.
+        :param converter: Conversion logic represented by a Converter object. Set to None for a Forex-like simple rate.
+        """
 
         if len(assets) < 2:
             raise InvalidPoolException()
@@ -79,6 +106,16 @@ class Pool(object):
             self.amounts = self._initial_amounts.copy()
 
     def convert(self, asset: str, amount: float, target: str, with_fees: bool) -> float:
+        """
+        Swaps 'asset' into 'target'. Returns the resulting target asset amount. Applies the full
+        swap to the liquidity pools, changing the amount of each asset present in the pools.
+
+        :param asset: Asset to swap such as "USDT".
+        :param amount: Amount of asset to be swapped.
+        :param target: Target asset to swap the asset for, such as "DAI".
+        :param with_fees: Set to true to apply Converter fees.
+        :return: Amount obtained of target asset after the swap.
+        """
         if asset == target:
             raise ImpossibleConversionException()
         start_i = self.assets.index(asset)
@@ -88,11 +125,19 @@ class Pool(object):
             final_amount *= (1 - self.exchange.fee)
         return final_amount
 
-    def reset(self):
+    def reset(self) -> None:
+        """
+        Resets the state of the pools to the initial one.
+        """
         if self._initial_amounts is not None:
             self.amounts = self._initial_amounts.copy()
 
     def get_pairs(self) -> List[Pair]:
+        """
+        Returns a list of Pair objects representing all possible exchange pairs using the assets
+        present in the Pool.
+        :return: A list of Pair objects.
+        """
         pairs = list(combinations(self.assets, 2))
         pairs_obj: List[Pair] = []
         for pair in pairs:
@@ -108,11 +153,21 @@ class Pool(object):
 class Loop(object):
 
     def __init__(self, pairs: List[Pair]):
+        """
+        Represents the abstraction of an arbitrage, as a set of chained swaps
+        between assets, such as "ETH to DAI" then "DAI to USDC" then "USD to ETH",
+        which would be a triangular arbitrage. Loops always start and end with the same asset.
+
+        :param pairs: A list of Pair objects representing the neccessary swaps to run the whole loop.
+        """
         self.pairs = pairs
         self._validate()
 
     @property
     def initial_asset(self) -> str:
+        """
+        Returns the initial asset of the loop, like "ETH"
+        """
         # The asset that exists both in the first and the last pair of the loop
         first_pair = self.pairs[0]
         last_pair = self.pairs[-1]
@@ -126,6 +181,9 @@ class Loop(object):
 
     @property
     def size(self) -> int:
+        """
+        Returns the size of the loop, as in 3 in triangular arbitrage.
+        """
         return len(self.pairs)
 
     def convert(self, amount: float, with_fees: bool = True) -> float:
@@ -139,6 +197,11 @@ class Loop(object):
         return amount
 
     def get_max_absolute_profit(self) -> Tuple[float, float]:
+        """
+        Optimizes the amount to be traded to maximize absolute profits, taking into account the
+        slippage created in LPs when trading large amounts.
+        :return: A tuple of (<optimal amount to trade>, <absolute profits for that amount>)
+        """
         max_x = optimize.fmin(lambda x: -(self.convert(x) - x), 1)
         return max_x, self.convert(max_x) - max_x
 
