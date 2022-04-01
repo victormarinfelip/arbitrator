@@ -1,10 +1,7 @@
-import matplotlib.pyplot as plt
-
-from trading_arbitrator.primitives import Loop, Pair, Pool, LoopPool, Exchange, DexRateFormulaType, ExchangeTypes
+from trading_arbitrator.primitives import Loop, Pair, Pool, LoopPool
 from trading_arbitrator.errors import InvalidLoopError
-from typing import Optional, List, Union
+from typing import Optional, List
 from itertools import combinations, permutations
-import math
 
 
 class Arbitrator(object):
@@ -16,6 +13,23 @@ class Arbitrator(object):
                  rates: Optional[List[float]] = None,
                  gas_price: float = 0
                  ):
+        """
+        Generates arbitrage "loops" and computes their performance. Can be used in "simple mode"
+        by passing a list of pairs and rates, and it will generate all possible valid "loops" of N swaps
+        and their profitability (3 for triangular arbitrage).
+
+        Can also use any combination of Pool objects representing AMMs of as many token types as possible
+        (say, a curve pool with 3 tokens, and another with 4 tokens). Pools incorporate a converter that can
+        apply any function as conversion, such as constant function market makers.
+
+        For simple mode pass pairs and rates. For AMM modes pass pools. Initial assets must be always passed.
+
+        :param pairs: List of pairs such as [["ETH", "BTC"], ["BTC", "USDT"], ["ETH", "USDT"]]
+        :param pools: List of Pool objects.
+        :param initial_assets: List of assets to be used as initial assets for the arbitrage as in ["ETH", "USDT"]
+        :param rates: List of change rates for the pairs if used in simple mode.
+        :param gas_price: Price of gas unit.
+        """
         if pairs is not None and pools is not None:
             raise ValueError
         if pairs is not None and rates is None:
@@ -42,11 +56,19 @@ class Arbitrator(object):
     def _create_pools_from_str_pairs(self, pairs: List[List[str]], rates: List[float]) -> List[Pool]:
         pools: List[Pool] = []
         for pair, rate in zip(pairs, rates):
-            pool = Pool(assets=[pair[0], pair[1]], rate=rate)
+            pool = Pool(name="GENERIC", assets=[pair[0], pair[1]], rate=rate)
             pools.append(pool)
         return pools
 
     def get_loops(self, sizes: Optional[List[int]] = None, with_fees: bool = True) -> List[Loop]:
+        """
+        Returns a list of simulated Loop objects sorted by relative returns after investing a single unit of
+        starting asset.
+
+        :param sizes: List of desired loop sizes: [3] for triangular arbitrage, [3, 4, 5] for that and more.
+        :param with_fees: True to apply fees. Fees must be specified when creating a Converter for a Pool.
+        :return: A list of Pool objects sorted by simulated returns.
+        """
         if sizes is None:
             sizes = [3]
         pool = LoopPool(self._generate_loops(sizes))
@@ -68,80 +90,3 @@ class Arbitrator(object):
                 except InvalidLoopError:
                     pass
         return final_loop_list
-
-
-# Let's test this...
-
-pairs = [
-    ["A", "B"],
-    ["A", "C"],
-    ["B", "C"],
-    ["C", "D"],
-    ["D", "A"],
-    ["B", "D"]
-]
-
-rates = [
-    1.,
-    2.,
-    3.,
-    0.7,
-    0.9,
-    2
-]
-
-# arb = Arbitrator(pairs=pairs, rates=rates, initial_assets=["A", "B"])
-# loops = arb.get_loops(sizes=[2,3,4,5])
-# for l in loops:
-#     print(l, l.rate())
-
-# Now let's do some shit
-
-def ConstantProductAMM(i, j, am, state, **kwargs):
-    """
-    Implements prid(x_i) = C, where x_i are the amounts of i coins in the pool,
-    and C a constant. Constant product automated market maker.
-
-    :param i: index of starting coin
-    :param j: index of target coin
-    :param am: amount of starting coin to trade for target coin
-    :param state: list of pool sizes
-    :param kwargs: Extra stuff that the function may need
-    :return: amount of target asset to be sent to trader
-    """
-    initial_j = state[j]
-    # We get the constant C
-    C = math.prod(state)
-    # We add "am" quantity of coin i to the pool:
-    state[i] += am
-    prod_no_j = math.prod(state[:j]+state[j+1:])
-    final_j = C / prod_no_j
-    # We write the new amount of j
-    state[j] = final_j
-    return initial_j - final_j
-
-# Let's create an exchange:
-ex = Exchange("CPAMM", type_=ExchangeTypes.DEX, conversion_formula=ConstantProductAMM)
-
-# Let's have 2 pools:
-pool1 = Pool(assets=["A", "B", "C"], amounts=[500,400,200], exchange=ex)
-pool2 = Pool(assets=["A", "B", "C", "D"], amounts=[500,400,300, 200], exchange=ex)
-
-# Create arbi
-arb = Arbitrator(pools=[pool1, pool2], initial_assets=["A", "D"])
-loops = arb.get_loops(sizes=[2,3,4,5])
-best = loops[15]
-
-results = []
-for i in range(1,500,2):
-    results.append(best.convert(i) - i)
-
-print(best.get_max_absolute_profit())
-plt.plot(results)
-plt.grid()
-plt.show()
-
-
-
-
-

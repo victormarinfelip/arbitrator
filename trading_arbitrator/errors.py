@@ -34,9 +34,9 @@ class LPDepletedError(Exception):
         """
         super().__init__()
 
-
     def __str__(self):
         return "LP tokens were fully depleted!"
+
 
 class ImpossibleConversionException(Exception):
 
@@ -50,17 +50,3 @@ class ImpossibleConversionException(Exception):
 
     def __str__(self):
         return "Invalid conversion: {}".format(str(self.data))
-
-
-class WrongExTypeError(Exception):
-
-    def __init__(self, ex_type):
-        """
-        Raised when an exchange type doesn't match its data
-        """
-
-        super().__init__()
-        self.ex_type = ex_type
-
-    def __str__(self):
-        return "Invalid conversion: {}".format(str(self.ex_type))
