@@ -1,5 +1,5 @@
 # Arbitrator
-#### *An arbitrage calculator adapted to the modern age of cryto automated market maketrs.*
+#### *An arbitrage calculator adapted to the modern age of cryto automated market makers.*
 
 Requirements:
 
