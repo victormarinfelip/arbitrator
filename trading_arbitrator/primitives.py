@@ -198,13 +198,13 @@ class Loop(object):
                 pair.parent_pool.reset()
         return amount
 
-    def get_max_absolute_profit(self) -> Tuple[float, float]:
+    def get_max_absolute_profit(self, with_fees: bool = True) -> Tuple[float, float]:
         """
         Optimizes the amount to be traded to maximize absolute profits, taking into account the
         slippage created in LPs when trading large amounts.
         :return: A tuple of (<optimal amount to trade>, <absolute profits for that amount>)
         """
-        max_x = optimize.fmin(lambda x: -(self.convert(x) - x), 1)
+        max_x = optimize.fmin(lambda x: -(self.convert(x, with_fees=with_fees)) + x, 1)[0]
         return max_x, self.convert(max_x) - max_x
 
     def _validate(self):
