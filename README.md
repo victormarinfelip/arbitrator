@@ -99,7 +99,7 @@ for l in loops:
     A/C ex: pool1 -> B/C ex: pool1 -> A/B ex: pool1 Return: 0.8575418868941085
     
 
-Since we have only one `Pool` and the CFMM function is independent of the path, we get exactly the same result for both loops, which should be 1 without the 5% per swap fee applied. Let's check it out with more than one loop:
+Since we have only one `Pool` and the CFMM function is independent of the path, we get exactly the same result for both loops, which should be 1 without the 5% per swap fee applied. Let's check it out with more than one pool:
 
 
 ```python
@@ -137,7 +137,7 @@ print("Pool2 state:", pool2.amounts)
 print("Pool3 state:", pool3.amounts)
 
 loop = loops[0]
-loop.convert(50, reset=False)  # Pass reset=False to not reset pool states after a conversion
+loop.convert(amount=50, reset=False)  # Pass reset=False to not reset pool states after a conversion
 
 print("After the conversion:")
 print("Pool1 state:", pool1.amounts)
@@ -189,7 +189,7 @@ def constant_product_amm(i, j, am, state):
 ```
 
 Any function following this pattern can be coded and used with the Converter object.
-Constant sum market maker, for stablecoin swapping, is implemented, and will throw
+Constant sum market maker, for stablecoin swapping, is implemented too alongside constant product market maker, and will throw
 an exception if any pool is emptied.
 In a future update Curve's StableSwap algorithm will be included.
 
