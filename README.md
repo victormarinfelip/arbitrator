@@ -99,7 +99,7 @@ for l in loops:
     A/C ex: pool1 -> B/C ex: pool1 -> A/B ex: pool1 Return: 0.8575418868941085
     
 
-Since we have only one `Pool` and the CFMM function is independent of the path, we get exactly the same result for both loops, which should be 1 without the 5% per swap fee applied. Let's check it out with more than one loop:
+Since we have only one `Pool` and the CFMM function is independent of the path, we get exactly the same result for both loops, which should be 1 without the 5% per swap fee applied. Let's check it out with more than one pool:
 
 
 ```python
