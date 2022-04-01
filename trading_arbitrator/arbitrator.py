@@ -13,6 +13,23 @@ class Arbitrator(object):
                  rates: Optional[List[float]] = None,
                  gas_price: float = 0
                  ):
+        """
+        Generates arbitrage "loops" and computes their performance. Can be used in "simple mode"
+        by passing a list of pairs and rates, and it will generate all possible valid "loops" of N swaps
+        and their profitability (3 for triangular arbitrage).
+
+        Can also use any combination of Pool objects representing AMMs of as many token types as possible
+        (say, a curve pool with 3 tokens, and another with 4 tokens). Pools incorporate a converter that can
+        apply any function as conversion, such as constant function market makers.
+
+        For simple mode pass pairs and rates. For AMM modes pass pools. Initial assets must be always passed.
+
+        :param pairs: List of pairs such as [["ETH", "BTC"], ["BTC", "USDT"], ["ETH", "USDT"]]
+        :param pools: List of Pool objects.
+        :param initial_assets: List of assets to be used as initial assets for the arbitrage as in ["ETH", "USDT"]
+        :param rates: List of change rates for the pairs if used in simple mode.
+        :param gas_price: Price of gas unit.
+        """
         if pairs is not None and pools is not None:
             raise ValueError
         if pairs is not None and rates is None:
@@ -44,6 +61,14 @@ class Arbitrator(object):
         return pools
 
     def get_loops(self, sizes: Optional[List[int]] = None, with_fees: bool = True) -> List[Loop]:
+        """
+        Returns a list of simulated Loop objects sorted by relative returns after investing a single unit of
+        starting asset.
+
+        :param sizes: List of desired loop sizes: [3] for triangular arbitrage, [3, 4, 5] for that and more.
+        :param with_fees: True to apply fees. Fees must be specified when creating a Converter for a Pool.
+        :return: A list of Pool objects sorted by simulated returns.
+        """
         if sizes is None:
             sizes = [3]
         pool = LoopPool(self._generate_loops(sizes))
